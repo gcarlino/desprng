@@ -1,3 +1,4 @@
 *.o
 *.a
 toypicmcc
+toypicmcc_fortran
