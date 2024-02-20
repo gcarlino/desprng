@@ -49,10 +49,20 @@ int create_identifier(unsigned long *nident);
 #pragma acc routine(initialize_individual) seq
 int initialize_individual(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long nident);
 
+#pragma acc routine(initialize_individual) seq
+int initialize_individual_new(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long nident, unsigned long ipart);
+
 #pragma acc routine(make_prn) seq
 int make_prn(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long icount, unsigned long *iprn);
 
 #pragma acc routine(get_uniform_prn) seq
 double get_uniform_prn(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long icount, unsigned long *iprn);
+
+#pragma acc routine(get_uniform_prn) seq
+double get_uniform_prn_new(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long icount, unsigned long *iprn, unsigned long ipart);
+
+int desprng_alloca_individual(desprng_individual_t *thread_data, int size);
+
+int desprng_alloca_common(desprng_common_t *process_data);
 
 int check_type_sizes();

@@ -22,6 +22,7 @@
  */
 
 #include <limits.h>
+#include <malloc.h>
 #include "desprng.h"
 
 /* These are the signatures for the des.c functions that we call directly */
@@ -75,6 +76,22 @@ int initialize_individual(desprng_common_t *process_data, desprng_individual_t *
     return 0;
 }
 
+/* Initializes the DES PRNG data used by individual threads */
+int initialize_individual_new(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long nident, unsigned long ipart)
+{
+    unsigned i;
+
+    thread_data = thread_data + ipart;
+    nident = nident + ipart;
+
+    thread_data->nident = nident;
+    for (i = 0; i < 32; i++)
+        thread_data->Kn3[i] = thread_data->KnR[i] = thread_data->KnL[i] = 0UL;
+
+    _deskey(process_data, thread_data, (unsigned char *)&nident);
+
+    return 0;
+}
 
 /* Computes an unsigned long PRN */
 int make_prn(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long icount, unsigned long *iprn)
@@ -88,6 +105,16 @@ int make_prn(desprng_common_t *process_data, desprng_individual_t *thread_data, 
 /* Returns a PRN in the form of double-precision float, uniform in the range [0, 1) */
 double get_uniform_prn(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long icount, unsigned long *iprn)
 {
+    _des(process_data, thread_data, (unsigned char *)&icount, (unsigned char *)iprn);
+
+    return *iprn / (1.0 + ULONG_MAX);
+}
+
+/* Returns a PRN in the form of double-precision float, uniform in the range [0, 1) */
+double get_uniform_prn_new(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long icount, unsigned long *iprn, unsigned long ipart)
+{
+    thread_data = thread_data + ipart;
+  
     _des(process_data, thread_data, (unsigned char *)&icount, (unsigned char *)iprn);
 
     return *iprn / (1.0 + ULONG_MAX);
@@ -311,4 +338,16 @@ int check_type_sizes()
         return -1;
 
     return 0;
+}
+
+int desprng_alloca_individual(desprng_individual_t *data, int size)
+{
+  data = malloc(sizeof(desprng_individual_t) * size);
+  return 0;
+}
+
+int desprng_alloca_common(desprng_common_t *data)
+{
+  data = malloc(sizeof(desprng_common_t));
+  return 0;
 }
