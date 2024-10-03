@@ -1,4 +1,11 @@
 *.o
 *.a
+*.mod
+*.png
+*.dat
+
 toypicmcc
 toypicmcc_fortran
+test_interop
+
+Session.vim
