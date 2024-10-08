@@ -46,11 +46,14 @@ int initialize_common(desprng_common_t *process_data);
 #pragma acc routine(create_identifier) seq
 int create_identifier(unsigned long *nident);
 
+#pragma acc routine(create_identifier_f) seq
+int create_identifier_f(unsigned long *nident, int part);
+
 #pragma acc routine(initialize_individual) seq
 int initialize_individual(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long nident);
 
 #pragma acc routine(initialize_individual) seq
-int initialize_individual_new(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long nident, unsigned long ipart);
+int initialize_individual_f(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long *nident, int ipart);
 
 #pragma acc routine(make_prn) seq
 int make_prn(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long icount, unsigned long *iprn);
@@ -58,11 +61,16 @@ int make_prn(desprng_common_t *process_data, desprng_individual_t *thread_data, 
 #pragma acc routine(get_uniform_prn) seq
 double get_uniform_prn(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long icount, unsigned long *iprn);
 
-#pragma acc routine(get_uniform_prn) seq
-double get_uniform_prn_new(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long icount, unsigned long *iprn, unsigned long ipart);
+#pragma acc routine(get_uniform_prn_f) seq
+double get_uniform_prn_f(desprng_common_t *process_data, desprng_individual_t *thread_data, int icount, unsigned long *iprn, int ipart);
 
-int desprng_alloca_individual(desprng_individual_t *thread_data, int size);
+#pragma acc routine(alloca_ident) seq
+unsigned long *alloca_ident(int size);
 
-int desprng_alloca_common(desprng_common_t *process_data);
+#pragma acc routine(alloca_ident) seq
+desprng_individual_t *desprng_alloca_individual(int size);
+
+#pragma acc routine(desprng_alloca_common) seq
+desprng_common_t *desprng_alloca_common();
 
 int check_type_sizes();

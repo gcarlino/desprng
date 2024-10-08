@@ -21,8 +21,9 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdlib.h>
+#include <stdio.h>
 #include <limits.h>
-#include <malloc.h>
 #include "desprng.h"
 
 /* These are the signatures for the des.c functions that we call directly */
@@ -61,6 +62,32 @@ int create_identifier(unsigned long *nident)
     return 0;
 }
 
+int create_identifier_f(unsigned long *nident, int ipart)
+{
+    unsigned long ntmp;
+    unsigned char i;
+
+    nident = nident + ipart;
+    *nident = ipart;
+
+    /* Make sure *nident < 2**56 to guarantee the uniqueness of the key,
+       i.e. to make it an identifier */
+    if (*nident >> 56) return -1;
+
+    ntmp = *nident << 1;
+    *nident = 0UL;
+    /* Build the identifier byte by byte, with descending significance */
+    for (i = 0; i < 8; i++)
+    {
+        /* Make the next group of 7 bits the most significant bits of ntmp */
+        ntmp <<= 7;
+        /* Add the group as a byte to the identifier
+           (with a padded zero for the least significant bit) */
+        *nident += (ntmp >> 57) << ((7 - i) * 8 + 1);
+    }
+    return 0;
+}
+
 
 /* Initializes the DES PRNG data used by individual threads */
 int initialize_individual(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long nident)
@@ -77,18 +104,24 @@ int initialize_individual(desprng_common_t *process_data, desprng_individual_t *
 }
 
 /* Initializes the DES PRNG data used by individual threads */
-int initialize_individual_new(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long nident, unsigned long ipart)
+int initialize_individual_f(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long *nident, int ipart)
 {
     unsigned i;
 
-    thread_data = thread_data + ipart;
-    nident = nident + ipart;
+    printf("Dentro initialize_individual_f A\n");
+    thread_data = thread_data + (unsigned long)ipart;
+    nident = nident + (unsigned long)ipart;
 
-    thread_data->nident = nident;
+    printf("Dentro initialize_individual_f B: %lu\n", ipart);
+    thread_data->nident = *nident;
+    printf("Dentro initialize_individual_f C\n");
+
     for (i = 0; i < 32; i++)
         thread_data->Kn3[i] = thread_data->KnR[i] = thread_data->KnL[i] = 0UL;
+    printf("Dentro initialize_individual_f D\n");
 
-    _deskey(process_data, thread_data, (unsigned char *)&nident);
+    _deskey(process_data, thread_data, (unsigned char *)nident);
+    printf("Dentro initialize_individual_f E\n");
 
     return 0;
 }
@@ -111,11 +144,15 @@ double get_uniform_prn(desprng_common_t *process_data, desprng_individual_t *thr
 }
 
 /* Returns a PRN in the form of double-precision float, uniform in the range [0, 1) */
-double get_uniform_prn_new(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long icount, unsigned long *iprn, unsigned long ipart)
+double get_uniform_prn_f(desprng_common_t *process_data, desprng_individual_t *thread_data, int icount, unsigned long *iprn, int ipart)
 {
-    thread_data = thread_data + ipart;
+    unsigned long ulipart = (unsigned long)ipart;
+    unsigned long ulicount = (unsigned long)icount;
+
+    thread_data = thread_data + ulipart;
+    printf("ipart = %d - ulipart = %lu\n", ipart, ulipart);
   
-    _des(process_data, thread_data, (unsigned char *)&icount, (unsigned char *)iprn);
+    _des(process_data, thread_data, (unsigned char *)&ulicount, (unsigned char *)iprn);
 
     return *iprn / (1.0 + ULONG_MAX);
 }
@@ -123,6 +160,8 @@ double get_uniform_prn_new(desprng_common_t *process_data, desprng_individual_t 
 /* Initializes the read-only DES PRNG data used by all threads */
 int initialize_common(desprng_common_t *process_data)
 {
+    printf("initialize_common\n");
+    printf("address of(process_data) %lu\n", (unsigned long)process_data);
     unsigned char i;
 
     /*  Five arrays that are read by _deskey() alone */
@@ -315,6 +354,7 @@ int initialize_common(desprng_common_t *process_data)
     for (i = 0; i < 24; i++) process_data->bigbyte[i] = bigbyte[i];
     for (i = 0; i < 64; i++)
     {
+        // printf("i= %d\n", i);
         process_data->SP[0][i] = SP1[i];
         process_data->SP[1][i] = SP2[i];
         process_data->SP[2][i] = SP3[i];
@@ -325,6 +365,38 @@ int initialize_common(desprng_common_t *process_data)
         process_data->SP[7][i] = SP8[i];
     }
     return 0;
+}
+
+// Allocate identifier
+unsigned long *alloca_ident(int size)
+{
+    unsigned long *nident;
+    nident = (unsigned long *)malloc(8 * size);
+    return nident;
+}
+
+// Allocate single thread data structure
+desprng_individual_t *desprng_alloca_individual(int size)
+{
+    printf("desprng_alloca_individual\n");
+
+    desprng_individual_t *individual_data;
+    individual_data = (desprng_individual_t *)malloc(sizeof(desprng_individual_t) * size);
+
+    return individual_data;
+}
+
+// Allocate data structure accessed by all threads.
+desprng_common_t *desprng_alloca_common()
+{
+    printf("desprng_alloca_common\n");
+
+    desprng_common_t *common_data; 
+    common_data = (desprng_common_t *)malloc(sizeof(desprng_common_t));
+    // printf("sizeof(common_data) %d\n", (int)sizeof(*common_data));
+    printf("address of(common_data) %lu\n", (unsigned long)common_data);
+
+    return common_data;
 }
 
 /* Hopefully self explanatory... */
@@ -338,16 +410,4 @@ int check_type_sizes()
         return -1;
 
     return 0;
-}
-
-int desprng_alloca_individual(desprng_individual_t *data, int size)
-{
-  data = malloc(sizeof(desprng_individual_t) * size);
-  return 0;
-}
-
-int desprng_alloca_common(desprng_common_t *data)
-{
-  data = malloc(sizeof(desprng_common_t));
-  return 0;
 }
