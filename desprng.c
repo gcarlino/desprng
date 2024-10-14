@@ -68,9 +68,7 @@ int create_identifier_f(unsigned long *nident, int ipart)
     unsigned char i;
     unsigned long *nidentpart;
 
-    printf("nident[%d] = 0x%016lX\n", ipart, nident[ipart]);
     nident[ipart] = (unsigned long)ipart;
-    printf("nident[%d] = 0x%016lX\n", ipart, nident[ipart]);
     nidentpart = nident + ipart;
 
     /* Make sure *nident < 2**56 to guarantee the uniqueness of the key,
@@ -88,7 +86,6 @@ int create_identifier_f(unsigned long *nident, int ipart)
            (with a padded zero for the least significant bit) */
         *nidentpart += (ntmp >> 57) << ((7 - i) * 8 + 1);
     }
-    printf("nident[%d] = 0x%016lX - 0x%016lX\n", ipart, nident[ipart], *nidentpart);
     return 0;
 }
 
@@ -111,18 +108,17 @@ int initialize_individual(desprng_common_t *process_data, desprng_individual_t *
 int initialize_individual_f(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long *nident, int ipart)
 {
     unsigned i;
+    unsigned long *nidentpart;
     desprng_individual_t *individual_thread_data;
 
-    nident[ipart] = ipart;
-
+    nidentpart = nident + ipart;
     individual_thread_data = thread_data + (unsigned long)ipart;
 
-    individual_thread_data->nident = *nident;
-
+    individual_thread_data->nident = *nidentpart;
     for (i = 0; i < 32; i++)
         individual_thread_data->Kn3[i] = individual_thread_data->KnR[i] = individual_thread_data->KnL[i] = 0UL;
 
-    _deskey(process_data, individual_thread_data, (unsigned char *)nident);
+    _deskey(process_data, individual_thread_data, (unsigned char *)nidentpart);
 
     return 0;
 }
@@ -152,12 +148,9 @@ double get_uniform_prn_f(desprng_common_t *process_data, desprng_individual_t *t
     unsigned long iprn;
     double dprn;
 
-  
     _des(process_data, thread_data + ulipart, (unsigned char *)&ulicount, (unsigned char *)&iprn);
 
     dprn = iprn / (1.0 + ULONG_MAX);
-    // printf("icount = %d - dprn = %f\n", icount, dprn);
-    // return iprn / (1.0 + ULONG_MAX);
     return dprn;
 }
 
