@@ -83,10 +83,20 @@ program test_desprng
     end do
   end do
 
-    zaverage = zaverage / (ntime * npart * ncoll)
+  zaverage = zaverage / (ntime * npart * ncoll)
   zvariance = zvariance / (ntime * npart * ncoll)
-  print *, zaverage, zvariance
-  ! print *, xi
+  print *, 'average = ', zaverage, 'variance = ', zvariance
+  print *, 'npart = ', npart
+  print *, 'xi0 = ', xi0
+  print *, 'xt = ', xt
+
+  open(99,FILE='./xi.dat',ACCESS='STREAM')
+  write(99)npart
+  write(99)xi0
+  write(99)xt
+  write(99)xi
+  close(99)
+  ! print *, xi, '\n'
 
   ! Deallocate
   deallocate(xi)
