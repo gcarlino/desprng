@@ -25,39 +25,38 @@ module desprng_fortran
       type(c_ptr) :: desprng_alloca_common
     end function desprng_alloca_common
 
-    integer(c_int) function initialize_common(process_data) bind(c)
+    function initialize_common(process_data) bind(c)
       import ::  c_int, c_ptr
+      integer(c_int) :: initialize_common
       type(c_ptr), value :: process_data
     end function initialize_common
 
-    integer(c_int) function create_identifier_f(nident, ipart) bind(c)
+    function create_identifier_f(nident, ipart) bind(c)
       import :: c_ptr, c_int
-      type(c_ptr) :: nident
-      integer(c_int) :: ipart
+      integer(c_int) :: create_identifier_f
+      type(c_ptr), value :: nident
+      integer(c_int), value :: ipart
     end function
 
-    integer (c_int) function initialize_individual_f   &
-            (process_data, thread_data, nident, ipart) bind(c)
+    function initialize_individual_f(process_data, thread_data, nident, ipart) bind(c)
       import :: c_int, c_ptr
-      implicit none
-      type(c_ptr) :: process_data
-      type(c_ptr) :: thread_data
-      type(c_ptr) :: nident
-      integer(c_int) :: ipart
+      integer(c_int) :: initialize_individual_f
+      type(c_ptr), value :: process_data
+      type(c_ptr), value :: thread_data
+      type(c_ptr), value :: nident
+      integer(c_int), value :: ipart
     end function
 
-    real(c_double) function get_uniform_prn_f(process_data, thread_data, &
-              icount, iprn, ipart) bind(c)
+    function get_uniform_prn_f(process_data, thread_data, icount, ipart) bind(c)
       import :: c_double, c_ptr, c_int
       implicit none
-      type(c_ptr) :: process_data
-      type(c_ptr) :: thread_data
-      type(c_ptr) :: iprn
-      integer(c_int) :: icount
-      integer(c_int) :: ipart
+      real(c_double) :: get_uniform_prn_f
+      type(c_ptr), value :: process_data
+      type(c_ptr), value :: thread_data
+      integer(c_int), value :: icount
+      integer(c_int), value :: ipart
     end function
     
-
   end interface
 
 end module desprng_fortran
