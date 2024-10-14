@@ -14,12 +14,12 @@ program test_desprng
   type(c_ptr) :: nident
   type(c_ptr) :: iprn
 
-  integer(c_int) :: npart = 400
+  integer(c_int) :: npart = 4000
   integer(c_int) :: ipart, icount
 
   real :: xprn, zeta, czeta, zaverage = 0.0, zvariance = 0.0, dt = 1.0E-2, xt
   real, dimension(:), allocatable :: xi
-  real, parameter :: xi0 = 0.6
+  real, parameter :: xi0 = 1. / SQRT(2.)
   integer :: ierr
 
   ! print *, "Before alloca, nident", nident
@@ -44,9 +44,9 @@ program test_desprng
   czeta = SQRT(12.0) 
   xt = ntime * dt
 
-  do itime = 1, ntime
+  do itime = 0, ntime - 1
     do ipart = 1, npart
-      if (itime .eq. 1) then
+      if (itime .eq. 0) then
         ! print *, "ipart = ", ipart
         ! print *, "Before create identifier"
         ! print *, "process_data", process_data
@@ -67,9 +67,9 @@ program test_desprng
         xi(ipart) = xi0
         ! print *, "End if"
       end if
-      do icoll = 0, Ncoll - 1
+      do icoll = 0, ncoll - 1
         ! print *, "icoll = ", icoll
-        icount = itime + icoll;
+        icount = ISHFT(itime, 16) + icoll
         ! print *, "Before get_uniform_prn. ipart = ", ipart
         ! print *, "process_data, icount, ipart", process_data, icount, ipart
         xprn = get_uniform_prn_f(process_data, thread_data, icount, ipart)
@@ -77,8 +77,8 @@ program test_desprng
         zeta = czeta * (xprn - 0.5)
         zaverage = zaverage + zeta
         zvariance = zvariance + zeta * zeta
-        xi(ipart) = xi(ipart) -2.0 * xi(ipart) * dt / ncoll + zeta *  & 
-                   sqrt(2.0 * (1.0 - xi(ipart) * xi(ipart)) * dt / ncoll)
+        xi(ipart) = xi(ipart) + (-2.0 * xi(ipart) * dt / ncoll + zeta *  & 
+          sqrt(2.0 * (1.0 - xi(ipart) * xi(ipart)) * dt / ncoll))
       end do
     end do
   end do
