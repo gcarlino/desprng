@@ -66,16 +66,19 @@ int create_identifier_f(unsigned long *nident, int ipart)
 {
     unsigned long ntmp;
     unsigned char i;
+    unsigned long *nidentpart;
 
-    nident = nident + ipart;
-    *nident = ipart;
+    printf("nident[%d] = 0x%016lX\n", ipart, nident[ipart]);
+    nident[ipart] = (unsigned long)ipart;
+    printf("nident[%d] = 0x%016lX\n", ipart, nident[ipart]);
+    nidentpart = nident + ipart;
 
     /* Make sure *nident < 2**56 to guarantee the uniqueness of the key,
        i.e. to make it an identifier */
-    if (*nident >> 56) return -1;
+    if (*nidentpart >> 56) return -1;
 
-    ntmp = *nident << 1;
-    *nident = 0UL;
+    ntmp = *nidentpart << 1;
+    *nidentpart = 0UL;
     /* Build the identifier byte by byte, with descending significance */
     for (i = 0; i < 8; i++)
     {
@@ -83,8 +86,9 @@ int create_identifier_f(unsigned long *nident, int ipart)
         ntmp <<= 7;
         /* Add the group as a byte to the identifier
            (with a padded zero for the least significant bit) */
-        *nident += (ntmp >> 57) << ((7 - i) * 8 + 1);
+        *nidentpart += (ntmp >> 57) << ((7 - i) * 8 + 1);
     }
+    printf("nident[%d] = 0x%016lX - 0x%016lX\n", ipart, nident[ipart], *nidentpart);
     return 0;
 }
 
@@ -107,21 +111,18 @@ int initialize_individual(desprng_common_t *process_data, desprng_individual_t *
 int initialize_individual_f(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long *nident, int ipart)
 {
     unsigned i;
+    desprng_individual_t *individual_thread_data;
 
-    printf("Dentro initialize_individual_f A\n");
-    thread_data = thread_data + (unsigned long)ipart;
-    nident = nident + (unsigned long)ipart;
+    nident[ipart] = ipart;
 
-    printf("Dentro initialize_individual_f B: %lu\n", ipart);
-    thread_data->nident = *nident;
-    printf("Dentro initialize_individual_f C\n");
+    individual_thread_data = thread_data + (unsigned long)ipart;
+
+    individual_thread_data->nident = *nident;
 
     for (i = 0; i < 32; i++)
-        thread_data->Kn3[i] = thread_data->KnR[i] = thread_data->KnL[i] = 0UL;
-    printf("Dentro initialize_individual_f D\n");
+        individual_thread_data->Kn3[i] = individual_thread_data->KnR[i] = individual_thread_data->KnL[i] = 0UL;
 
-    _deskey(process_data, thread_data, (unsigned char *)nident);
-    printf("Dentro initialize_individual_f E\n");
+    _deskey(process_data, individual_thread_data, (unsigned char *)nident);
 
     return 0;
 }
@@ -144,24 +145,25 @@ double get_uniform_prn(desprng_common_t *process_data, desprng_individual_t *thr
 }
 
 /* Returns a PRN in the form of double-precision float, uniform in the range [0, 1) */
-double get_uniform_prn_f(desprng_common_t *process_data, desprng_individual_t *thread_data, int icount, unsigned long *iprn, int ipart)
+double get_uniform_prn_f(desprng_common_t *process_data, desprng_individual_t *thread_data, int icount, int ipart)
 {
     unsigned long ulipart = (unsigned long)ipart;
     unsigned long ulicount = (unsigned long)icount;
+    unsigned long iprn;
+    double dprn;
 
-    thread_data = thread_data + ulipart;
-    printf("ipart = %d - ulipart = %lu\n", ipart, ulipart);
   
-    _des(process_data, thread_data, (unsigned char *)&ulicount, (unsigned char *)iprn);
+    _des(process_data, thread_data + ulipart, (unsigned char *)&ulicount, (unsigned char *)&iprn);
 
-    return *iprn / (1.0 + ULONG_MAX);
+    dprn = iprn / (1.0 + ULONG_MAX);
+    // printf("icount = %d - dprn = %f\n", icount, dprn);
+    // return iprn / (1.0 + ULONG_MAX);
+    return dprn;
 }
 
 /* Initializes the read-only DES PRNG data used by all threads */
 int initialize_common(desprng_common_t *process_data)
 {
-    printf("initialize_common\n");
-    printf("address of(process_data) %lu\n", (unsigned long)process_data);
     unsigned char i;
 
     /*  Five arrays that are read by _deskey() alone */
@@ -371,31 +373,23 @@ int initialize_common(desprng_common_t *process_data)
 unsigned long *alloca_ident(int size)
 {
     unsigned long *nident;
-    nident = (unsigned long *)malloc(8 * size);
+    nident = (unsigned long *)malloc(sizeof(unsigned long) * size);
     return nident;
 }
 
 // Allocate single thread data structure
 desprng_individual_t *desprng_alloca_individual(int size)
 {
-    printf("desprng_alloca_individual\n");
-
     desprng_individual_t *individual_data;
     individual_data = (desprng_individual_t *)malloc(sizeof(desprng_individual_t) * size);
-
     return individual_data;
 }
 
 // Allocate data structure accessed by all threads.
 desprng_common_t *desprng_alloca_common()
 {
-    printf("desprng_alloca_common\n");
-
     desprng_common_t *common_data; 
     common_data = (desprng_common_t *)malloc(sizeof(desprng_common_t));
-    // printf("sizeof(common_data) %d\n", (int)sizeof(*common_data));
-    printf("address of(common_data) %lu\n", (unsigned long)common_data);
-
     return common_data;
 }
 

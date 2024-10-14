@@ -62,7 +62,7 @@ int make_prn(desprng_common_t *process_data, desprng_individual_t *thread_data, 
 double get_uniform_prn(desprng_common_t *process_data, desprng_individual_t *thread_data, unsigned long icount, unsigned long *iprn);
 
 #pragma acc routine(get_uniform_prn_f) seq
-double get_uniform_prn_f(desprng_common_t *process_data, desprng_individual_t *thread_data, int icount, unsigned long *iprn, int ipart);
+double get_uniform_prn_f(desprng_common_t *process_data, desprng_individual_t *thread_data, int icout, int ipart);
 
 #pragma acc routine(alloca_ident) seq
 unsigned long *alloca_ident(int size);
