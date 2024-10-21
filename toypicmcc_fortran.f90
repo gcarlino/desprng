@@ -5,7 +5,6 @@ program test_desprng
 
   implicit none
 
-  ! integer :: npart = 10
   integer :: ntime = 4, itime
   integer :: ncoll = 2, icoll
 
@@ -22,24 +21,15 @@ program test_desprng
   real, parameter :: xi0 = 1. / SQRT(2.)
   integer :: ierr
 
-  ! print *, "Before alloca, nident", nident
   nident = alloca_ident(8 * (npart + 1))
-  ! print *, "After alloca, nident", nident
-  ! print *, "Before desprng_alloca_individual"
   thread_data = desprng_alloca_individual(npart + 1)
-  ! print *, "Before desprng_alloca_common, process_data", process_data
   process_data = desprng_alloca_common()
-  ! print *, "After alloca, process_data", process_data
 
-  ! print *, "Before initialize_common"
   ierr = initialize_common(process_data)
-  ! print *, "After initialize_common, process_data", process_data
-  ! print *, ierr
   if (ierr .ne. 0) then
     print *, "Error initialize_common"
   end if
 
-  ! allocate(xi(8 * npart))
   allocate(xi(npart))
   czeta = SQRT(12.0) 
   xt = ntime * dt
@@ -47,33 +37,20 @@ program test_desprng
   do itime = 0, ntime - 1
     do ipart = 1, npart
       if (itime .eq. 0) then
-        ! print *, "ipart = ", ipart
-        ! print *, "Before create identifier"
-        ! print *, "process_data", process_data
-        ! print *, "nident", nident
         ierr = create_identifier_f(nident, ipart)
         if (ierr .ne. 0) then
           print *, "Error create_identifier_f"
         end if
-        ! print *, "After create_identifier"
-        ! print *, "ipart = ", ipart
         ierr = initialize_individual_f(process_data, thread_data, nident, ipart)
         if (ierr .ne. 0) then
           print *, "Error initialize_individual_f"
         end if
-        ! print *, ierr, xi0
-        ! print *, "After initialize individual identifier"
-        ! print *, "process_data", process_data
         xi(ipart) = xi0
-        ! print *, "End if"
       end if
       do icoll = 0, ncoll - 1
-        ! print *, "icoll = ", icoll
+        ! FIXME: is it 16 or 8 bits?
         icount = ISHFT(itime, 16) + icoll
-        ! print *, "Before get_uniform_prn. ipart = ", ipart
-        ! print *, "process_data, icount, ipart", process_data, icount, ipart
         xprn = get_uniform_prn_f(process_data, thread_data, icount, ipart)
-        ! print *, "After get_uniform_prn, xprn =", xprn
         zeta = czeta * (xprn - 0.5)
         zaverage = zaverage + zeta
         zvariance = zvariance + zeta * zeta
@@ -96,7 +73,6 @@ program test_desprng
   write(99)xt
   write(99)xi
   close(99)
-  ! print *, xi, '\n'
 
   ! Deallocate
   deallocate(xi)
