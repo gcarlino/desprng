@@ -1,7 +1,8 @@
 program test_desprng
 
   use iso_c_binding, only: c_ptr, c_int
-  use desprng_fortran
+  use desprng_f
+  use openacc
 
   implicit none
 
@@ -13,7 +14,7 @@ program test_desprng
   type(c_ptr) :: nident
   type(c_ptr) :: iprn
 
-  integer(c_int) :: npart = 4000
+  integer(c_int) :: npart = 4000000
   integer(c_int) :: ipart, icount
 
   real :: xprn, zeta, czeta, zaverage = 0.0, zvariance = 0.0, dt = 1.0E-2, xt
@@ -34,7 +35,9 @@ program test_desprng
   czeta = SQRT(12.0) 
   xt = ntime * dt
 
+  !$acc data copyout(xi) create(nident)
   do itime = 0, ntime - 1
+    !$acc serial loop reduction(+: zaverage, zvariance) private(iprn)
     do ipart = 1, npart
       if (itime .eq. 0) then
         ierr = create_identifier_f(nident, ipart)
@@ -58,7 +61,9 @@ program test_desprng
           sqrt(2.0 * (1.0 - xi(ipart) * xi(ipart)) * dt / ncoll))
       end do
     end do
+    !$acc end serial loop 
   end do
+  !$acc end data
 
   zaverage = zaverage / (ntime * npart * ncoll)
   zvariance = zvariance / (ntime * npart * ncoll)

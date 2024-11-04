@@ -1,4 +1,4 @@
-module desprng_fortran
+module desprng_f
 
   use iso_c_binding
   private
@@ -59,4 +59,4 @@ module desprng_fortran
     
   end interface
 
-end module desprng_fortran
+end module desprng_f
